@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Vasile Bogdan, 2023. All Rights Reserved.
 
 #include "TankAttackCharacter.h"
 #include "UObject/ConstructorHelpers.h"
