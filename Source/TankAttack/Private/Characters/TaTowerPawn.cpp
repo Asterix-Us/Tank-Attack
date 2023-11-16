@@ -8,6 +8,5 @@
 ATaTowerPawn::ATaTowerPawn()
 {
 	// Default Capsule settings
-	CapsuleComp.Get()->SetCapsuleHalfHeight(62.f);
-	CapsuleComp.Get()->SetCapsuleRadius(54.f);
+	CapsuleComp->InitCapsuleSize(54.f, 62.f);
 }

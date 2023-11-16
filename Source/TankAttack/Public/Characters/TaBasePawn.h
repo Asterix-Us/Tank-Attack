@@ -25,20 +25,18 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-	
-	void HandleDestruction();
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ta Base Pawn|Base Components", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Base Pawn", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCapsuleComponent> CapsuleComp;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ta Base Pawn|Base Components", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components|Base Pawn", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> BaseMesh;
 
 private:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Base Components", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Base Pawn", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> TurretMesh;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Base Components", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Base Pawn", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> ProjectileSpawnPoint;
 };
