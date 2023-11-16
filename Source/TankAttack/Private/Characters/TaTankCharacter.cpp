@@ -9,6 +9,9 @@
 
 ATaTankCharacter::ATaTankCharacter()
 {
+	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+	
 	// Set size for player capsule
 	GetCapsuleComponent()->InitCapsuleSize(59.f, 59.f);
 
@@ -41,7 +44,37 @@ ATaTankCharacter::ATaTankCharacter()
 	PrimaryActorTick.bStartWithTickEnabled = true;
 }
 
+void ATaTankCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	UpdateMaterial();
+}
+
+void ATaTankCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+}
+
 void ATaTankCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 }
+
+void ATaTankCharacter::UpdateMaterial()
+{
+	if (HasAuthority())
+		return;
+	
+	if (IsLocallyControlled())
+	{
+		// Apply Player Material to the local player
+		GetMesh()->SetMaterial(0, PlayerTankMat);
+	}
+	else
+	{
+		// Apply Enemy Material to other players
+		GetMesh()->SetMaterial(0, EnemyTankMat);
+	}
+}
+

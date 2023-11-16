@@ -18,6 +18,8 @@ class TANKATTACK_API ATaPlayerController : public APlayerController
 public:
 	ATaPlayerController();
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	/** Time Threshold to know if it was a short press */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ta Player Controller|Input")
 	float ShortPressThreshold;
@@ -39,12 +41,14 @@ protected:
 	
 	virtual void SetupInputComponent() override;
 
-	/** Input handlers for SetDestination action. */
-	void OnInputStarted();
-	void OnSetDestinationTriggered(); // Triggered every frame when the input is held down
 	void OnSetDestinationReleased();
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_MoveToLocation(const FVector_NetQuantize& DesiredLocation);
+
 private:
+	UPROPERTY(Replicated)
 	FVector CachedDestination;
+	
 	float FollowTime; // For how long it has been pressed
 };

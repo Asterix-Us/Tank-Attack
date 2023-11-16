@@ -5,6 +5,7 @@
 #include "EnhancedInputComponent.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Net/UnrealNetwork.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(TaPlayerController)
 
@@ -16,6 +17,13 @@ ATaPlayerController::ATaPlayerController()
 	CachedDestination = FVector::ZeroVector;
 	ShortPressThreshold = 0.3f;
 	FollowTime = 0.f;
+}
+
+void ATaPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ATaPlayerController, CachedDestination);
 }
 
 void ATaPlayerController::BeginPlay()
@@ -31,30 +39,19 @@ void ATaPlayerController::BeginPlay()
 
 void ATaPlayerController::SetupInputComponent()
 {
-	// set up gameplay key bindings
 	Super::SetupInputComponent();
 
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent))
 	{
 		// Setup mouse input events
-		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Started, this, &ThisClass::OnInputStarted);
-		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Triggered, this, &ThisClass::OnSetDestinationTriggered);
 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Completed, this, &ThisClass::OnSetDestinationReleased);
 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Canceled, this, &ThisClass::OnSetDestinationReleased);
 	}
 }
 
-void ATaPlayerController::OnInputStarted()
+void ATaPlayerController::OnSetDestinationReleased()
 {
-	StopMovement();
-}
-
-void ATaPlayerController::OnSetDestinationTriggered()
-{
-	// We flag that the input is being pressed
-	FollowTime += GetWorld()->GetDeltaSeconds();
-	
 	// We look for the location in the world where the player has pressed the input
 	FHitResult Hit;
 
@@ -63,27 +60,40 @@ void ATaPlayerController::OnSetDestinationTriggered()
 	{
 		CachedDestination = Hit.Location;
 	}
-	
-	// Move towards mouse pointer
-	APawn* ControlledPawn = GetPawn();
-	if (ControlledPawn != nullptr)
+
+	// Stop any performing movements
+	StopMovement();
+
+	// Call MoveToLocation on server
+	Server_MoveToLocation(CachedDestination);
+
+	if (!HasAuthority())
 	{
-		const FVector WorldDirection = (CachedDestination - ControlledPawn->GetActorLocation()).GetSafeNormal();
-		ControlledPawn->AddMovementInput(WorldDirection, 1.0, false);
+		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, CachedDestination);
+		
+		// Spawn cursor particles locally
+		if (IsLocalController())
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				this,
+				FXCursor,
+				CachedDestination,
+				FRotator::ZeroRotator,
+				FVector(1.f),
+				true,
+				true,
+				ENCPoolMethod::None,
+				true);
+		}
 	}
 }
 
-void ATaPlayerController::OnSetDestinationReleased()
+void ATaPlayerController::Server_MoveToLocation_Implementation(const FVector_NetQuantize& DesiredLocation)
 {
-	// If it was a short press
-	if (FollowTime <= ShortPressThreshold)
-	{
-		// We move there and spawn some particles
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, CachedDestination);
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor,
-			CachedDestination, FRotator::ZeroRotator, FVector(1.f, 1.f, 1.f),
-			true, true, ENCPoolMethod::None, true);
-	}
+	UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, DesiredLocation);
+}
 
-	FollowTime = 0.f;
+bool ATaPlayerController::Server_MoveToLocation_Validate(const FVector_NetQuantize& DesiredLocation)
+{
+	return true;
 }
