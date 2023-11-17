@@ -5,6 +5,8 @@
 #include "EnhancedInputComponent.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Gameplay/Shooting/TaCombatInterface.h"
+#include "Gameplay/Shooting/TaProjectile.h"
 #include "Net/UnrealNetwork.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(TaPlayerController)
@@ -47,6 +49,9 @@ void ATaPlayerController::SetupInputComponent()
 		// Setup mouse input events
 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Completed, this, &ThisClass::OnSetDestinationReleased);
 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Canceled, this, &ThisClass::OnSetDestinationReleased);
+
+		// Setup shoot input event
+		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Triggered, this, &ThisClass::Fire);
 	}
 }
 
@@ -85,6 +90,26 @@ void ATaPlayerController::OnSetDestinationReleased()
 				ENCPoolMethod::None,
 				true);
 		}
+	}
+}
+
+void ATaPlayerController::Fire()
+{
+	// Call interface FireWeapon from the controlled Pawn
+	
+	// 1st interface version
+	// if (GetPawn()->GetClass()->ImplementsInterface(UTaCombatInterface::StaticClass()))
+	// {
+	// 	Cast<ITaCombatInterface>(GetPawn())->FireWeapon(); // C++ only
+	//  ITaCombatInterface::Execute_FireWeapon(GetPawn()); // Blueprint version
+	// }
+
+	// 2nd interface version
+	ITaCombatInterface* CombatInterface = Cast<ITaCombatInterface>(GetPawn());
+	if (CombatInterface)
+	{
+		CombatInterface->FireWeapon(); // C++ only
+		// CombatInterface->Execute_FireWeapon(GetPawn()); // Blueprint version
 	}
 }
 

@@ -4,14 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Gameplay/Shooting/TaCombatInterface.h"
 #include "TaTankCharacter.generated.h"
 
+class UTaCombatComponent;
 class UCameraComponent;
 class UMaterialInterface;
 class USpringArmComponent;
 
 UCLASS(Blueprintable)
-class TANKATTACK_API ATaTankCharacter : public ACharacter
+class TANKATTACK_API ATaTankCharacter : public ACharacter, public ITaCombatInterface
 {
 	GENERATED_BODY()
 
@@ -20,6 +22,7 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PostInitializeComponents() override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -39,10 +42,21 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Components|Tank")
 	TObjectPtr<UMaterialInterface> EnemyTankMat;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components|Tank")
+	TObjectPtr<UTaCombatComponent> CombatComp;
 	
 	void UpdateMaterial();
 
 public:
+#pragma region TaCombatInterface
+	// Blueprint alternative
+	// void FireWeapon_Implementation() override;
+
+	// C++ only version
+	virtual void FireWeapon() override; 
+#pragma endregion
+	
 	/** Returns TopDownCameraComponent subobject **/
 	FORCEINLINE UCameraComponent* GetCameraComponent() const { return CameraComp; }
 	/** Returns CameraBoom subobject **/

@@ -32,9 +32,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ta Player Controller|Input", meta=(AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
 	
-	/** Jump Input Action */
+	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ta Player Controller|Input", meta=(AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> SetDestinationClickAction;
+
+	/** Shoot Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ta Player Controller|Input", meta=(AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ShootAction;
 
 protected:
 	virtual void BeginPlay() override;
@@ -45,6 +49,8 @@ protected:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_MoveToLocation(const FVector_NetQuantize& DesiredLocation);
+
+	void Fire();
 
 private:
 	UPROPERTY(Replicated)

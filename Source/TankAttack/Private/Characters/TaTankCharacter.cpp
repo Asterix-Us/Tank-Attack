@@ -3,9 +3,14 @@
 
 #include "Characters/TaTankCharacter.h"
 #include "Camera/CameraComponent.h"
+#include "Characters/Components/TaCombatComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Gameplay/Shooting/TaProjectile.h"
+#include "Engine/SkeletalMeshSocket.h"
+
+#include UE_INLINE_GENERATED_CPP_BY_NAME(TaTankCharacter)
 
 ATaTankCharacter::ATaTankCharacter()
 {
@@ -26,7 +31,7 @@ ATaTankCharacter::ATaTankCharacter()
 	GetCharacterMovement()->bConstrainToPlane = true;
 	GetCharacterMovement()->bSnapToPlaneAtStart = true;
 
-	// Create a camera boom...
+	// Create a camera boom
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->SetUsingAbsoluteRotation(true); // Don't want arm to rotate when character does
@@ -34,10 +39,14 @@ ATaTankCharacter::ATaTankCharacter()
 	CameraBoom->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
 	CameraBoom->bDoCollisionTest = false; // Don't want to pull camera in when it collides with level
 
-	// Create a camera...
+	// Create a camera
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
 	CameraComp->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	CameraComp->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+
+	// Create combat component
+	CombatComp = CreateDefaultSubobject<UTaCombatComponent>(TEXT("CombatComp"));
+	CombatComp->SetIsReplicated(true);
 
 	// Activate ticking in order to update the cursor every frame.
 	PrimaryActorTick.bCanEverTick = true;
@@ -54,6 +63,16 @@ void ATaTankCharacter::BeginPlay()
 void ATaTankCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+}
+
+void ATaTankCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (CombatComp)
+	{
+		CombatComp->SetCharacterRef(this);
+	}
 }
 
 void ATaTankCharacter::Tick(float DeltaSeconds)
@@ -78,3 +97,10 @@ void ATaTankCharacter::UpdateMaterial()
 	}
 }
 
+void ATaTankCharacter::FireWeapon()
+{
+	if (CombatComp)
+	{
+		CombatComp->FireButtonPressed();
+	}
+}
