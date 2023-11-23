@@ -10,7 +10,6 @@ class ATaProjectile;
 class UParticleSystem;
 class USoundBase;
 class UCameraShakeBase;
-class ATaTankCharacter;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TANKATTACK_API UTaCombatComponent : public UActorComponent
@@ -19,26 +18,13 @@ class TANKATTACK_API UTaCombatComponent : public UActorComponent
 
 public:	
 	UTaCombatComponent();
-	friend class ABlasterCharacter;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	friend class ATaTankCharacter;
 
 	void FireButtonPressed();
-	
-protected:
-	virtual void BeginPlay() override;
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Ta Combat")
 	TSubclassOf<ATaProjectile> ProjectileClass;
-
-	UPROPERTY(EditAnywhere, Category = "Ta Combat|Cosmetic")
-	TObjectPtr<UParticleSystem> DeathParticles;
-
-	UPROPERTY(EditAnywhere, Category = "Ta Combat|Cosmetic")
-	TObjectPtr<USoundBase> DeathSound;
-
-	UPROPERTY(EditAnywhere, Category = "Ta Combat|Cosmetic")
-	TSubclassOf<UCameraShakeBase> DeathCameraShake;
 	
 	UPROPERTY(EditAnywhere, Category = "Ta Combat")
 	float FireWaitTime = 1.f;

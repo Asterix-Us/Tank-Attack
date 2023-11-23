@@ -71,13 +71,6 @@ void ATaProjectile::Destroyed()
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation());
 	}
-	
-	// // Play camera shake
-	// APlayerController* PlayerController = Cast<APlayerController>(Cast<APawn>(GetOwner())->GetController());
-	// if (HitCameraShake)
-	// {
-	// 	PlayerController->ClientStartCameraShake(HitCameraShake);
-	// }
 }
 
 void ATaProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -94,9 +87,6 @@ void ATaProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 				// Apply damage to the hit actor
 				UGameplayStatics::ApplyDamage(OtherActor, Damage, OwnerController, this, UDamageType::StaticClass());
 				
-				UE_LOG(LogTemp, Warning, TEXT("The OtherActor's name is %s"), *OtherActor->GetName());
-				UE_LOG(LogTemp, Warning, TEXT("The OtherComp's name is %s"), *OtherComp->GetName());
-
 				// Destroy the projectile
 				Destroy();
 				return;

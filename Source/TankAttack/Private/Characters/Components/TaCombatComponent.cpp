@@ -12,16 +12,6 @@ UTaCombatComponent::UTaCombatComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UTaCombatComponent::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-void UTaCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-}
-
 void UTaCombatComponent::FireButtonPressed()
 {
 	// Check if you can fire a new projectile
@@ -45,6 +35,7 @@ void UTaCombatComponent::FireButtonPressed()
 
 void UTaCombatComponent::StartFireTimer()
 {
+	// Allow for weapon fire rate
 	if (Character == nullptr) return;
 	Character->GetWorldTimerManager().SetTimer(
 		FireTimer,
@@ -55,6 +46,7 @@ void UTaCombatComponent::StartFireTimer()
 
 void UTaCombatComponent::FireTimerFinished()
 {
+	// Allow for another fire
 	bCanFire = true;
 }
 
@@ -75,8 +67,6 @@ void UTaCombatComponent::LocalFire()
 			// Spawn a new projectile on the server
 			GetWorld()->SpawnActor<ATaProjectile>(
 				ProjectileClass, SocketTransform.GetLocation(), Character->GetActorRotation(), SpawnParams);
-
-			UE_LOG(LogTemp, Warning, TEXT("Projectile spawned!"));
 		}
 	}
 }

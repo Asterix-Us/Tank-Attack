@@ -1,14 +1,17 @@
 // Copyright Vasile Bogdan, 2023. All Rights Reserved.
 
-
 #include "Characters/TaTankCharacter.h"
+#include "Characters/PlayerStates/TaPlayerState.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Camera/CameraComponent.h"
 #include "Characters/Components/TaCombatComponent.h"
+#include "NiagaraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Gameplay/Shooting/TaProjectile.h"
-#include "Engine/SkeletalMeshSocket.h"
+#include "GameModes/TaGameMode.h"
+#include "GameStates/TaGameState.h"
+#include "Kismet/GameplayStatics.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(TaTankCharacter)
 
@@ -56,13 +59,52 @@ ATaTankCharacter::ATaTankCharacter()
 void ATaTankCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	// Set event to receive damage notify
+	if (HasAuthority())
+	{
+		OnTakeAnyDamage.AddDynamic(this, &ThisClass::ReceiveDamage);
+	}
+
+	// Update material on the Tank, to make SimulatedProxies another color
 	UpdateMaterial();
 }
 
-void ATaTankCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void ATaTankCharacter::PollInit()
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	if (PlayerStateRef == nullptr)
+	{
+		PlayerStateRef = GetPlayerState<ATaPlayerState>();
+		if (PlayerStateRef)
+		{
+			// Update player state values on the HUD
+			OnPlayerStateInitialized();
+
+			// Test if this player is currently a top scoring player
+			ATaGameState* BlasterGameState = Cast<ATaGameState>(UGameplayStatics::GetGameState(this));
+			if (BlasterGameState && BlasterGameState->TopScoringPlayers.Contains(PlayerStateRef))
+			{
+				MulticastGainedTheLead();
+			}
+		}
+	}
+}
+
+void ATaTankCharacter::OnPlayerStateInitialized()
+{
+	// Update score and defeats on the HUD
+	PlayerStateRef->AddToScore(0.f);
+	PlayerStateRef->AddToDefeats(0);
+}
+
+void ATaTankCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
+                                     AController* InstigatorController, AActor* DamageCauser)
+{
+	GameModeRef = GameModeRef == nullptr ? GetWorld()->GetAuthGameMode<ATaGameMode>() : GameModeRef;
+	if (GameModeRef == nullptr) return;
+
+	// Let the game mode know that the player was eliminated
+	GameModeRef->PlayerEliminated(this, Controller, InstigatorController);
 }
 
 void ATaTankCharacter::PostInitializeComponents()
@@ -75,9 +117,74 @@ void ATaTankCharacter::PostInitializeComponents()
 	}
 }
 
+void ATaTankCharacter::Elim()
+{
+	MulticastElim();
+}
+
+void ATaTankCharacter::MulticastElim_Implementation()
+{
+	// Disable collision
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	// Cosmetics
+	if (DeathParticles)
+		UGameplayStatics::SpawnEmitterAtLocation(this, DeathParticles, GetActorLocation(), GetActorRotation());
+
+	if (DeathSound)
+		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
+
+	// Destroy crown FX if this player was the top scoring player
+	if (CrownComponent)
+	{
+		CrownComponent->DestroyComponent();
+	}
+	
+	// Respawn the player
+	GameModeRef = GameModeRef == nullptr ? GetWorld()->GetAuthGameMode<ATaGameMode>() : GameModeRef;
+	if (GameModeRef)
+	{
+		GameModeRef->HandleRespawn(this, Controller);
+	}
+}
+
+void ATaTankCharacter::MulticastGainedTheLead_Implementation()
+{
+	// Spawn the crown FX on this player, since it's the top scoring player
+	if (CrownSystem == nullptr) return;
+	if (CrownComponent == nullptr)
+	{
+		CrownComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			CrownSystem,
+			GetMesh(),
+			FName(),
+			GetActorLocation() + FVector(0.f, 0.f, 110.f),
+			GetActorRotation(),
+			EAttachLocation::KeepWorldPosition,
+			false
+		);
+	}
+	if (CrownComponent)
+	{
+		CrownComponent->Activate();
+	}
+}
+
+void ATaTankCharacter::MulticastLostTheLead_Implementation()
+{
+	// Destroy the crown FX if the lead is lost
+	if (CrownComponent)
+	{
+		CrownComponent->DestroyComponent();
+	}
+}
+
 void ATaTankCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	
+	PollInit();
 }
 
 void ATaTankCharacter::UpdateMaterial()
@@ -99,6 +206,7 @@ void ATaTankCharacter::UpdateMaterial()
 
 void ATaTankCharacter::FireWeapon()
 {
+	// Send the weapon firing input to the Combat Component
 	if (CombatComp)
 	{
 		CombatComp->FireButtonPressed();
